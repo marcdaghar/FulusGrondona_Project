@@ -1,0 +1,288 @@
+globals [
+  total-gold
+  total-silver
+  total-fulus
+  bimetallic-ratio
+  time
+  total-wealth
+]
+
+breed [ agents agent ]
+
+turtles-own [
+  wealth
+  gold-holdings
+  silver-holdings
+  fulus-holdings
+  is-trader
+  is-producer
+  community
+]
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Initialisation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to setup
+  clear-all
+  setup-globals
+  create-turtles 100 [ setup-agent ]
+  setup-network
+  reset-ticks
+end
+
+to setup-globals
+  set total-gold 10000
+  set total-silver 50000
+  set total-fulus 0
+  set bimetallic-ratio 15  ; 15 oz argent = 1 oz or
+  set time 0
+  set total-wealth 0
+end
+
+to setup-agent
+  set shape "circle"
+  set size 1.5
+  setxy random-xcor random-ycor
+  
+  ; Répartition initiale des richesses
+  set gold-holdings random 10 + 1
+  set silver-holdings random 100 + 10
+  set fulus-holdings 0
+  set wealth gold-holdings + silver-holdings / bimetallic-ratio
+  set total-wealth total-wealth + wealth
+  
+  ; Rôles
+  if random 100 < 30 [ set is-trader true ]
+  if random 100 < 20 [ set is-producer true ]
+  
+  ; Communauté (rouge = usuraire, vert = islamique)
+  if random 100 < 50 [
+    set color green
+    set community "islamic"
+  ] [
+    set color red
+    set community "usurious"
+  ]
+end
+
+to setup-network
+  let all-agents turtles
+  let num-links (count all-agents) * 2
+  repeat num-links [
+    let agent1 one-of all-agents
+    let agent2 one-of all-agents
+    if agent1 != agent2 [
+      create-link-with agent2
+    ]
+  ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Boucle Principale
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to go
+  if ticks > 100 [ stop ]
+  
+  set time time + 1
+  
+  ; 1. Échanges commerciaux
+  ask turtles [
+    if is-trader [
+      let partner one-of other turtles
+      if partner != nobody [
+        trade-with partner
+      ]
+    ]
+  ]
+  
+  ; 2. Production (pour les producteurs)
+  ask turtles with [ is-producer ] [
+    produce
+  ]
+  
+  ; 3. Intérêts (système usuraire)
+  ask turtles with [ community = "usurious" and is-trader ] [
+    charge-interest
+  ]
+  
+  ; 4. Zakat (système islamique)
+  ask turtles with [ community = "islamic" ] [
+    pay-zakat
+  ]
+  
+  ; 5. Arbitrage bimétallique
+  perform-arbitrage
+  
+  ; 6. Mise à jour des richesses
+  update-wealth
+  
+  ; 7. Création de crypto-fulus
+  if ticks mod 10 = 0 [
+    issue-fulus
+  ]
+  
+  tick
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Sous-routines
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to trade-with [ partner ]
+  ; Échange basé sur les besoins (simplifié)
+  let my-gold gold-holdings
+  let partner-silver [ silver-holdings ] of partner
+  
+  if my-gold > 0 and partner-silver > 0 [
+    let trade-amount min (list my-gold / 2 partner-silver / 2)
+    set gold-holdings gold-holdings - trade-amount
+    set silver-holdings silver-holdings + trade-amount * bimetallic-ratio
+    ask partner [
+      set silver-holdings silver-holdings - trade-amount * bimetallic-ratio
+      set gold-holdings gold-holdings + trade-amount
+    ]
+  ]
+end
+
+to produce
+  ; Production de biens convertis en monnaie
+  let production random 5 + 1
+  
+  ; 60% de chance de produire
+  if random 100 < 60 [
+    set fulus-holdings fulus-holdings + production
+    set total-fulus total-fulus + production
+  ]
+end
+
+to charge-interest
+  ; Prêt avec intérêt (10%)
+  let loan-amount gold-holdings * 0.2
+  let interest-rate 0.1
+  
+  if loan-amount > 0 [
+    ; Trouver un emprunteur (système usuraire)
+    let borrower one-of other turtles with [ community = "usurious" ]
+    if borrower != nobody [
+      ask borrower [
+        set gold-holdings gold-holdings + loan-amount
+      ]
+      set gold-holdings gold-holdings - loan-amount
+      set gold-holdings gold-holdings + loan-amount * interest-rate  ; intérêt perçu
+    ]
+  ]
+end
+
+to pay-zakat
+  ; Zakat : 2.5% de la richesse totale
+  let zakat-amount wealth * 0.025
+  if zakat-amount > 0 [
+    set wealth wealth - zakat-amount
+    ; Redistribution aux plus pauvres
+    let recipient one-of other turtles with [ community = "islamic" and wealth < 5 ]
+    if recipient != nobody [
+      ask recipient [
+        set wealth wealth + zakat-amount
+      ]
+    ]
+    set total-wealth total-wealth - zakat-amount
+  ]
+end
+
+to perform-arbitrage
+  ; Arbitrage bimétallique
+  let current-ratio total-gold / total-silver
+  
+  if current-ratio > bimetallic-ratio [
+    ; L'or est sous-évalué
+    ask one-of turtles [
+      set silver-holdings silver-holdings - 10
+      set gold-holdings gold-holdings + 1
+    ]
+  ]
+  
+  if current-ratio < bimetallic-ratio [
+    ; L'argent est sous-évalué
+    ask one-of turtles [
+      set gold-holdings gold-holdings - 1
+      set silver-holdings silver-holdings + 10
+    ]
+  ]
+end
+
+to issue-fulus
+  ; Émission de crypto-fulus
+  let issuance 100
+  set total-fulus total-fulus + issuance
+  
+  ; Distribution équitable entre agents islamiques
+  let islamic-agents turtles with [ community = "islamic" ]
+  if count islamic-agents > 0 [
+    let share issuance / count islamic-agents
+    ask islamic-agents [
+      set fulus-holdings fulus-holdings + share
+    ]
+  ]
+end
+
+to update-wealth
+  ask turtles [
+    set wealth gold-holdings + silver-holdings / bimetallic-ratio + fulus-holdings
+  ]
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Rapport
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to-report gini-coefficient
+  ; Calcul du coefficient de Gini pour la richesse
+  let wealth-list [ wealth ] of turtles
+  let sorted-wealth sort wealth-list
+  let n length sorted-wealth
+  
+  if n = 0 [ report 0 ]
+  
+  let sum-wealth sum sorted-wealth
+  let cumulative-sum 0
+  let weighted-sum 0
+  
+  foreach sorted-wealth [ w ->
+    set cumulative-sum cumulative-sum + w
+    set weighted-sum weighted-sum + cumulative-sum
+  ]
+  
+  report (weighted-sum / (n * sum-wealth)) * 2 - (n + 1) / n
+end
+
+to report-stats
+  let gini gini-coefficient
+  
+  print (word "Temps: " time)
+  print (word "Gini: " gini)
+  print (word "Richesse totale: " total-wealth)
+  print (word "Or total: " total-gold)
+  print (word "Argent total: " total-silver)
+  print (word "Fulus total: " total-fulus)
+  print "---------------------------"
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Visualisation
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to visualize
+  ; Code de visualisation (à appeler dans go)
+  report-stats
+end
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+class ThesisVisualization:
+    """Visualisation des données de la thèse"""
+    

@@ -1,0 +1,223 @@
+; Bimétallisme et Main Invisible
+; Simulation des échanges dans un système à double étalon
+
+globals [
+  total-wealth
+  market-stability
+  gold-price
+  silver-price
+]
+
+turtles-own [
+  wealth
+  gold-holdings
+  silver-holdings
+  trading-activity
+]
+
+to setup
+  clear-all
+  set gold-price 100
+  set silver-price 50
+  set total-wealth 0
+  
+  ; Créer des agents (producteurs/consommateurs)
+  create-turtles 100 [
+    set wealth random 1000
+    set gold-holdings random 10
+    set silver-holdings random 20
+    set trading-activity 0
+    setxy random-xcor random-ycor
+    set color blue
+  ]
+  
+  reset-ticks
+end
+
+to go
+  ; Chaque agent cherche à échanger
+  ask turtles [
+    ; Chaque agent a une fonction de demande/offre
+    let demand-gold (wealth / gold-price) * (0.5 + random-float 0.5)
+    let demand-silver (wealth / silver-price) * (0.5 + random-float 0.5)
+    
+    ; Trouver un partenaire d'échange
+    let partner one-of other turtles
+    if partner != nobody [
+      ; Négociation bilatérale (main invisible)
+      let trade-value (min wealth partner-wealth) / 2
+      
+      ; Échange de biens contre de la monnaie (or/argent)
+      if random 100 < 30 [
+        ; Échange de biens contre or
+        let gold-exchange (trade-value / gold-price) * 0.5
+        set gold-holdings gold-holdings + gold-exchange
+        set wealth wealth - trade-value * 0.5
+        set trading-activity trading-activity + 1
+      ]
+      
+      if random 100 < 30 [
+        ; Échange de biens contre argent
+        let silver-exchange (trade-value / silver-price) * 0.5
+        set silver-holdings silver-holdings + silver-exchange
+        set wealth wealth - trade-value * 0.5
+        set trading-activity trading-activity + 1
+      ]
+    ]
+  ]
+  
+  ; Mise à jour des prix (loi de l'offre et de la demande)
+  let total-gold sum [gold-holdings] of turtles
+  let total-silver sum [silver-holdings] of turtles
+  let total-wealth sum [wealth] of turtles
+  
+  set gold-price 100 * (total-wealth / total-gold) / 10
+  set silver-price 50 * (total-wealth / total-silver) / 10
+  
+  ; La stabilité du marché est fonction de l'activité commerciale
+  set market-stability mean [trading-activity] of turtles
+  
+  tick
+  
+  ; Afficher les statistiques
+  if ticks mod 10 = 0 [
+    show (word "Or: " gold-price " Argent: " silver-price " Stabilité: " market-stability)
+  ]
+end
+
+; Interface NetLogo
+; Boutons : setup, go
+; Moniteurs : gold-price, silver-price, market-stability
+; Graphiques : évolution des prix, activité commerciale
+
+# Analyse de la stabilité monétaire dans un système bimétallique
+
+library(ggplot2)
+library(forecast)
+
+# Simulation de données de prix sur 20 ans
+set.seed(42)
+annees <- 1:20
+
+# Simulation de la volatilité des prix
+prix_or <- 100 + cumsum(rnorm(20, 0, 5))
+prix_argent <- 50 + cumsum(rnorm(20, 0, 3))
+taux_change <- prix_or / prix_argent
+
+# Simulation de la valeur du Crypto-Fulus (panier 50/50)
+crypto_fulus <- 0.5 * prix_or + 0.5 * prix_argent
+
+# Création du dataframe
+data <- data.frame(
+  Annee = annees,
+  Or = prix_or,
+  Argent = prix_argent,
+  Taux_Change = taux_change,
+  Crypto_Fulus = crypto_fulus
+)
+
+# Visualisation
+ggplot(data, aes(x = Annee)) +
+  geom_line(aes(y = Or, color = "Or"), size = 1) +
+  geom_line(aes(y = Argent, color = "Argent"), size = 1) +
+  geom_line(aes(y = Crypto_Fulus, color = "Crypto-Fulus"), size = 1.5) +
+  labs(
+    title = "Stabilité du Crypto-Fulus vs. Métaux Précieux",
+    y = "Valeur (unité de compte)",
+    color = "Actif"
+  ) +
+  theme_minimal() +
+  scale_color_manual(values = c("Or" = "gold", "Argent" = "gray", "Crypto-Fulus" = "darkgreen"))
+
+# Calcul de la volatilité
+volatilite_or <- sd(prix_or) / mean(prix_or)
+volatilite_argent <- sd(prix_argent) / mean(prix_argent)
+volatilite_crypto <- sd(crypto_fulus) / mean(crypto_fulus)
+
+cat("Volatilité de l'Or :", round(volatilite_or * 100, 2), "%\n")
+cat("Volatilité de l'Argent :", round(volatilite_argent * 100, 2), "%\n")
+cat("Volatilité du Crypto-Fulus :", round(volatilite_crypto * 100, 2), "%\n")
+
+# Test de stabilité (augmenté de Dickey-Fuller)
+library(tseries)
+adf.test(crypto_fulus)
+
+# Prédiction de la stabilité future
+fit <- auto.arima(crypto_fulus)
+forecast_values <- forecast(fit, h = 10)
+plot(forecast_values, main = "Prédiction de la stabilité du Crypto-Fulus")
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+class CatastrophismeEclaire:
+    def __init__(self, seuil_effondrement, temps_horizon):
+        self.seuil = seuil_effondrement
+        self.horizon = temps_horizon
+        self.trajectoires = []
+        
+    def simuler_trajectoire(self, taux_croissance, volatilite, nb_scenarios=100):
+        for scenario in range(nb_scenarios):
+            # Simulation d'une trajectoire économique
+            t = np.linspace(0, self.horizon, 100)
+            # Mouvement brownien avec drift
+            drift = taux_croissance * t
+            bruit = np.random.normal(0, volatilite * np.sqrt(t))
+            trajectoire = drift + bruit
+            self.trajectoires.append(trajectoire)
+    
+    def calculer_probabilite_effondrement(self):
+        effondrements = 0
+        for trajectoire in self.trajectoires:
+            if np.min(trajectoire) < self.seuil:
+                effondrements += 1
+        return effondrements / len(self.trajectoires)
+    
+    def afficher(self):
+        plt.figure(figsize=(12, 6))
+        for trajectoire in self.trajectoires[:20]:  # Afficher 20 scénarios
+            plt.plot(trajectoire, alpha=0.3, color='blue')
+        
+        plt.axhline(y=self.seuil, color='red', linestyle='--', label='Seuil d\'effondrement')
+        plt.xlabel('Temps')
+        plt.ylabel('Niveau économique')
+        plt.title('Catastrophisme Éclairé (Dupuy) : Anticiper l\'effondrement pour l\'éviter')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+        
+        proba = self.calculer_probabilite_effondrement()
+        print(f"Probabilité d'effondrement : {proba:.2%}")
+        print(f"Risque : {proba * 100:.1f}% de chance d'atteindre le seuil critique")
+
+# Simulation
+catastrophe = CatastrophismeEclaire(seuil_effondrement=-10, temps_horizon=50)
+catastrophe.simuler_trajectoire(taux_croissance=0.1, volatilite=0.8, nb_scenarios=100)
+catastrophe.afficher()
+
+Code
+Concept
+Langage
+1
+Création ex nihilo vs Couverture 100%
+Python
+2
+Usure comme "Vol de Valeur" (Marx/Aristote)
+Python
+3
+Smart Contract Crypto-Fulus (Blockchain)
+Solidity
+4
+Projet Auto-Transcendant (Croyance Collective)
+Python
+5
+Main Invisible & Coordination du Marché
+NetLogo
+6
+Analyse Statistique de la Stabilité
+R
+7
+Catastrophisme Éclairé (Dupuy)
+Python
+
+Ces codes implémentent mathématiquement vos concepts philosophiques et peuvent être utilisés pour illustrer votre thèse ou pour des simulations dans vos chapitres.

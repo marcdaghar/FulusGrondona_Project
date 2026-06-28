@@ -1,0 +1,192 @@
+; Modèle conceptuel : Écosystème Monétaire Islamique
+; Inspiré de la "Logique du Détour" et de la "Théorie de l'Équilibre Ponctué"
+
+globals [
+  temps-global
+  confiance-credite ; Niveau de confiance dans la monnaie-crédit (0-100)
+  confiance-fulus   ; Niveau de confiance dans le crypto-fulus (0-100)
+  taux-riba         ; Taux d'intérêt du système usuraire
+  cycle-crise       ; Indicateur de tension systémique
+  regime            ; "Bimétallisme", "Monométallisme", "Effondrement"
+]
+
+breed [agents agent]
+breed [banques banque]
+
+agents-own [
+  richesse-credite
+  richesse-fulus
+  richesse-or
+  richesse-argent
+  desir-richesse ; Affect mimétique
+  est-marchand   ; Booléen : producteur ou consommateur
+  adhesion       ; Probabilité d'accepter le crypto-fulus
+]
+
+banques-own [
+  reserve-fractionnaire
+  dette-totale
+]
+
+to setup
+  clear-all
+  set temps-global 0
+  set regime "Monométallisme"
+  set confiance-credite 95
+  set confiance-fulus 5
+  set taux-riba 0.05
+  set cycle-crise 0
+  create-banques 1 [
+    set reserve-fractionnaire 0.1 ; 10% de réserves
+    set dette-totale 0
+  ]
+  create-agents 100 [
+    set richesse-credite random 100
+    set richesse-fulus 0
+    set richesse-or random 10
+    set richesse-argent random 50
+    set desir-richesse random 1.0
+    set est-marchand (random 2 = 1)
+    set adhesion 0.05 ; Confiance initiale faible
+  ]
+  reset-ticks
+end
+
+to go
+  if ticks > 1000 [stop]
+  set temps-global temps-global + 1
+  mettre-a-jour-confiance
+  agents-agissent
+  banques-emettent-credits
+  verifier-crise
+  tick
+end
+
+; ----- 1. Dynamique Mimétique et Évolution de la Confiance -----
+to mettre-a-jour-confiance
+  ; La confiance est un processus mimétique (auto-extériorisation)
+  ; Elle dépend de l'adhésion moyenne des agents et des cycles de crise
+  let moyenne-adhesion mean [adhesion] of agents
+  let crise-ecologique (cycle-crise > 50) ; Seuil de catastrophe
+
+  ; La confiance dans le fulus augmente avec l'adhésion mimétique
+  set confiance-fulus confiance-fulus + ( (moyenne-adhesion * 0.1) - (confiance-fulus * 0.02) )
+
+  ; La confiance dans le crédit est érodée par les crises et le riba
+  let erosion-crise (cycle-crise * 0.01)
+  set confiance-credite confiance-credite - (taux-riba * 0.5) - erosion-crise
+
+  ; Stabilisation autour d'un point d'équilibre (attracteur)
+  set confiance-fulus max (min confiance-fulus 100) 0
+  set confiance-credite max (min confiance-credite 100) 0
+
+  ; Transition de régime par équilibre ponctué
+  if (confiance-fulus > confiance-credite * 0.8 and ticks > 500) [
+    set regime "Bimétallisme"
+    ; Les dynasties usuraires conservent leur richesse mais perdent leur pouvoir
+    ask banques [ set reserve-fractionnaire 0.01 ] ; Banque rendue insignifiante
+  ]
+  if (cycle-crise > 80) [
+    set regime "Effondrement"
+    set confiance-credite 0
+  ]
+end
+
+; ----- 2. Comportement des Agents (Désir, Échange, Zakat) -----
+to agents-agissent
+  ask agents [
+    ; Le désir est mimétique : on désire ce que les autres désirent
+    let voisin un-of other agents
+    set desir-richesse (desir-richesse + ( [desir-richesse] of voisin - desir-richesse ) * 0.1)
+
+    ; Ajustement de l'adhésion au Fulus via la "tâche d'huile" (effet réseau)
+    if confiance-fulus > 30 [
+      set adhesion adhesion + ( (confiance-fulus / 100) * (1 - adhesion) * 0.05 )
+    ]
+
+    ; Décision d'échange en fonction du régime
+    if regime = "Bimétallisme" [
+      ; Échange travail contre Fulus (Monnaie-travail)
+      if est-marchand [
+        let travail-accompli random 10
+        set richesse-fulus richesse-fulus + travail-accompli
+        ; La Zakat est prélevée en Dinar/ Dirham (or/argent)
+        set richesse-or richesse-or + (travail-accompli * 0.1) ; accumulation
+        set richesse-argent richesse-argent + (travail-accompli * 0.2)
+      ]
+      ; Achat de biens avec Fulus (circulation)
+      if (not est-marchand) [
+        let biens-achetes min (list richesse-fulus 10)
+        set richesse-fulus richesse-fulus - biens-achetes
+        set richesse-credite richesse-credite - biens-achetes * 0.5 ; dévalorisation du crédit
+      ]
+    ]
+
+    ; Dans le système usuraire, l'agent s'endette pour consommer
+    if regime = "Monométallisme" [
+      if (not est-marchand) [
+        let besoin random 20
+        if (richesse-credite < besoin) [
+          let pret (besoin - richesse-credite) * 1.2
+          set richesse-credite richesse-credite + pret
+          ask one-of banques [ set dette-totale dette-totale + pret * (1 + taux-riba) ]
+        ]
+      ]
+    ]
+  ]
+end
+
+; ----- 3. Mécanismes Bancaires et Prédation -----
+to banques-emettent-credits
+  ask banques [
+    ; Création monétaire ex nihilo (réserve fractionnaire)
+    let nouvelles-credits ( (sum [richesse-credite] of agents) * reserve-fractionnaire )
+    set dette-totale dette-totale + nouvelles-credits
+
+    ; L'usure augmente exponentiellement la dette
+    set dette-totale dette-totale * (1 + taux-riba * 0.01)
+
+    ; Si la dette devient insoutenable, la crise s'aggrave
+    if (dette-totale > 100000) [
+      set cycle-crise cycle-crise + 2
+    ]
+  ]
+end
+
+; ----- 4. Détection des Crises et Équilibre Ponctué -----
+to verifier-crise
+  ; La crise est une rupture de l'opinion collective (désaffection pour la monnaie-crédit)
+  if (confiance-credite < 40) [
+    set cycle-crise cycle-crise + 0.5
+  ]
+
+  ; La cupidité des dynasties les rend vulnérables (équilibre ponctué)
+  if (taux-riba > 0.07) [
+    let richesse-moyenne mean [richesse-credite] of agents
+    if (richesse-moyenne < 20) [
+      set cycle-crise cycle-crise + 5
+    ]
+  ]
+
+  ; Régulation par la Zakat : si la thésaurisation d'or/argent est trop forte, la zakat est prélevée
+  let or-total sum [richesse-or] of agents
+  let argent-total sum [richesse-argent] of agents
+  if (or-total + argent-total > 5000) [
+    ask agents [
+      ; 2.5% de Zakat sur l'épargne en or et argent
+      set richesse-or richesse-or * 0.975
+      set richesse-argent richesse-argent * 0.975
+    ]
+    set cycle-crise cycle-crise - 5 ; La zakat apaise les tensions sociales
+  ]
+end
+
+; ----- 5. Fonctions de Visualisation (pour le debug) -----
+to-report regime-courant
+  report regime
+end
+
+to-report niveau-riba
+  report taux-riba
+end
+Ce code (en Solidity) est une représentation conceptuelle de l'environnement blockchain qui échappe à l'État et sert de "laboratoire monétaire". La blockchain est gérée par les neo-guildes.
