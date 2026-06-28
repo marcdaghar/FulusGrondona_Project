@@ -1,0 +1,12 @@
+Je vais vous fournir le code complet pour votre modèle d'économie bimétallique avec le principe contra-cyclique de Yusuf, le système de Grondona, et les cry-currencies. Ce code est structuré selon votre architecture et intègre les formulations mathématiques détaillées précédemment.
+yusuf_model/
+├── yusuf_model.py          # Modèle principal
+├── visualize.py            # Visualisation
+├── streamlit_app.py        # Interface web
+├── optimization.py         # Optimisation des paramètres
+├── shock_model.py          # Chocs exogènes
+├── statistical_validation.py # Validation statistique
+├── latex_export.py         # Export LaTeX
+├── run_all.py              # Script unifié
+├── config.yaml             # Configuration
+├── requirements.txt        # Dépendances
