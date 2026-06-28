@@ -1,0 +1,564 @@
+; ============================================================
+; MODÈLE MONÉTAIRE MIMÉTIQUE AVEC RÉSEAU SOCIAL ET BRUIT NEURONAL
+; ============================================================
+; Thèse : Pour une alternative islamique au capitalisme
+; Chapitre 2 : Une richesse nommée monnaie
+; Concepts : Nuqud/Fulus, Nisab/Zakat, Désir Mimétique, Potentia Multitudinis
+; ============================================================
+
+globals [
+  ; Paramètres globaux
+  total-wealth
+  avg-alpha
+  avg-desire
+  gini-coefficient
+  crisis-level
+  inflation-rate
+  velocity-money
+  total-zakat-collected
+  zakat-pool
+  
+  ; Statistiques pour les graphiques
+  wealth-history
+  alpha-history
+  desire-history
+  gini-history
+  crisis-history
+  inflation-history
+  velocity-history
+  step-counter
+]
+
+turtles-own [
+  ; Variables de l'agent
+  wealth              ; Richesse totale
+  alpha               ; Proportion en fulus (0 à 1)
+  nisab-threshold     ; Seuil du Nisab
+  tau-zakat           ; Taux de Zakat
+  risk-aversion       ; Aversion au risque (0.5 à 1.5)
+  desire              ; Désir d'argent actuel
+  desire-history      ; Historique du désir
+  wealth-history      ; Historique de la richesse
+  alpha-history       ; Historique de l'allocation
+  
+  ; Variables pour le réseau social
+  social-influence    ; Influence perçue du voisinage
+  neighbors-list      ; Liste des voisins
+  adoption-status     ; 0 = non adoptant, 1 = adoptant (crypto-fulus)
+]
+
+; ============================================================
+; PROCÉDURE D'INITIALISATION
+; ============================================================
+
+to setup
+  clear-all
+  setup-globals
+  setup-agents
+  setup-network
+  setup-plots
+  reset-ticks
+  set step-counter 0
+end
+
+to setup-globals
+  ; Paramètres globaux
+  set total-wealth 0
+  set avg-alpha 0.5
+  set avg-desire 0.5
+  set gini-coefficient 0
+  set crisis-level 0
+  set inflation-rate 0.02
+  set velocity-money 1.5
+  set total-zakat-collected 0
+  set zakat-pool 0
+  
+  ; Historiques (pour les graphiques)
+  set wealth-history []
+  set alpha-history []
+  set desire-history []
+  set gini-history []
+  set crisis-history []
+  set inflation-history []
+  set velocity-history []
+end
+
+to setup-agents
+  ; Créer les agents avec une distribution de richesse hétérogène (Pareto)
+  let num-agents 150
+  create-turtles num-agents [
+    setxy random-xcor random-ycor
+    set size 2
+    
+    ; Distribution de richesse Pareto (paramètre α=1.5, échelle=20)
+    set wealth (20 * (1 / (random-float 1)) ^ (1 / 1.5)) + 10
+    if wealth > 500 [set wealth 500]  ; Plafond
+    
+    ; Allocation initiale aléatoire entre 0.2 et 0.8
+    set alpha random-float 0.6 + 0.2
+    
+    ; Paramètres individuels
+    set nisab-threshold 100
+    set tau-zakat 0.025  ; 2.5%
+    set risk-aversion random-float 1.0 + 0.5  ; Entre 0.5 et 1.5
+    set desire 0.5
+    set desire-history []
+    set wealth-history []
+    set alpha-history []
+    
+    ; Statut d'adoption (crypto-fulus) - 20% initialement
+    if random-float 1 < 0.2 [set adoption-status 1]
+  ]
+end
+
+to setup-network
+  ; Créer un réseau "petit monde" (Watts-Strogatz)
+  ; avec 4 voisins et une probabilité de reconnection de 0.3
+  let num-agents count turtles
+  
+  ; Connecter chaque agent à ses 4 plus proches voisins
+  ; (Approximation pour NetLogo)
+  let agent-list sort turtles
+  let n length agent-list
+  
+  (foreach agent-list [
+    ask ? [
+      ; Se connecter aux 4 voisins les plus proches en termes d'ID
+      let my-id position ? agent-list
+      let neighbors (list 
+        item (mod (my-id - 1) n) agent-list
+        item (mod (my-id - 2) n) agent-list
+        item (mod (my-id + 1) n) agent-list
+        item (mod (my-id + 2) n) agent-list
+      )
+      set neighbors-list neighbors
+      
+      ; Ajouter des liens aléatoires (effet "petit monde")
+      if random-float 1 < 0.3 [
+        let target one-of other turtles
+        if not member? target neighbors [
+          set neighbors-list lput target neighbors-list
+        ]
+      ]
+    ]
+  ])
+  
+  ; Créer les liens visuels
+  ask turtles [
+    create-links-with neighbors-list
+  ]
+end
+
+; ============================================================
+; PROCÉDURE PRINCIPALE : UNE ÉTAPE DE SIMULATION
+; ============================================================
+
+to go
+  if ticks > 200 [stop]
+  
+  ask turtles [
+    ; 1. Calcul du désir mimétique (avec influence sociale)
+    compute-desire
+    
+    ; 2. Allocation monétaire avec bruit neuronal (softmax)
+    allocate-wealth-with-noise
+    
+    ; 3. Paiement de la Zakat
+    pay-zakat
+    
+    ; 4. Échanges commerciaux
+    trade
+    
+    ; 5. Propagation de l'adoption (crypto-fulus)
+    spread-adoption
+  ]
+  
+  ; 6. Redistribution de la Zakat
+  redistribute-zakat
+  
+  ; 7. Mise à jour des paramètres macroéconomiques
+  update-macro-variables
+  
+  ; 8. Enregistrement des données
+  record-data
+  
+  tick
+  set step-counter step-counter + 1
+end
+
+; ============================================================
+; 1. CALCUL DU DÉSIR MIMÉTIQUE (AVEC RÉSEAU SOCIAL)
+; ============================================================
+
+to compute-desire
+  ; Calculer le désir moyen des voisins
+  let avg-neighbor-desire mean [desire] of neighbors-list
+  
+  ; Besoin de liquidité individuel
+  let liquidity-need random-float 1
+  
+  ; Désir de base
+  let base-desire liquidity-need * (1 - risk-aversion * 0.1)
+  
+  ; Composante mimétique contagieuse (effet épidémique)
+  ; Plus l'influence sociale est forte, plus le désir se propage
+  let infection-strength 0.6
+  let mimetic-component (1 / (1 + exp(-5 * (avg-neighbor-desire - 0.5))))
+  
+  ; Si un voisin a adopté le crypto-fulus, le désir s'intensifie
+  let adoption-boost 0
+  if any? neighbors-list with [adoption-status = 1] [
+    set adoption-boost 0.3
+  ]
+  
+  ; Désir total (avec un peu de bruit aléatoire)
+  set desire (0.3 * base-desire + 0.5 * mimetic-component + 0.2 * adoption-boost + random-float 0.1)
+  set desire min desire 1  ; Normalisation
+  set desire max desire 0
+  
+  ; Enregistrement de l'historique
+  set desire-history lput desire desire-history
+end
+
+; ============================================================
+; 2. ALLOCATION MONÉTAIRE AVEC BRUIT NEURONAL (SOFTMAX)
+; ============================================================
+
+to allocate-wealth-with-noise
+  ; Coût de détention du fulus : inflation + zakat
+  let cost-fulus inflation-rate + tau-zakat
+  
+  ; Coût de détention du nuqud : coût d'opportunité + zakat
+  let cost-nuqud 0.02 + tau-zakat  ; 2% de rendement alternatif
+  
+  ; Calcul des utilités (l'inverse des coûts)
+  let utility-fulus 1 / (cost-fulus + 0.01)  ; Éviter division par zéro
+  let utility-nuqud 1 / (cost-nuqud + 0.01)
+  
+  ; Bruit neuronal : température cognitive
+  ; Plus la température est élevée, plus la décision est aléatoire
+  let cognitive-temperature 0.5 + random-float 0.5  ; Entre 0.5 et 1.0
+  
+  ; Softmax pour calculer la probabilité de choisir le fulus
+  let exp-fulus exp (utility-fulus / cognitive-temperature)
+  let exp-nuqud exp (utility-nuqud / cognitive-temperature)
+  let prob-fulus exp-fulus / (exp-fulus + exp-nuqud)
+  
+  ; Décision stochastique
+  if random-float 1 < prob-fulus [
+    ; Augmenter la part en fulus
+    set alpha min 1 (alpha + 0.05 * (1 - alpha))
+  ] else [
+    ; Augmenter la part en nuqud
+    set alpha max 0 (alpha - 0.05 * alpha)
+  ]
+  
+  ; Enregistrement de l'historique
+  set alpha-history lput alpha alpha-history
+end
+
+; ============================================================
+; 3. PAIEMENT DE LA ZAKAT
+; ============================================================
+
+to pay-zakat
+  if wealth > nisab-threshold [
+    let zakat-amount tau-zakat * (wealth - nisab-threshold)
+    set wealth wealth - zakat-amount
+    set total-zakat-collected total-zakat-collected + zakat-amount
+  ]
+end
+
+; ============================================================
+; 4. ÉCHANGES COMMERCIAUX (SIMULATION)
+; ============================================================
+
+to trade
+  ; Gain commercial aléatoire (simulant la productivité)
+  let trade-gain random-normal 0 1
+  set wealth wealth + trade-gain * 0.1
+  
+  ; Échanges entre voisins
+  let trade-partner one-of neighbors-list
+  if trade-partner != nobody [
+    ; Échange bilatéral : un bien contre de la monnaie
+    let good-value random-float 5
+    let price good-value * (1 + inflation-rate)
+    
+    if wealth > price [
+      ; L'agent achète le bien
+      set wealth wealth - price
+      ask trade-partner [set wealth wealth + price]
+    ]
+  ]
+  
+  ; Enregistrement de l'historique
+  set wealth-history lput wealth wealth-history
+end
+
+; ============================================================
+; 5. PROPAGATION DE L'ADOPTION (CRYPTO-FULUS)
+; ============================================================
+
+to spread-adoption
+  ; L'adoption se propage comme une épidémie (modèle SIR)
+  if adoption-status = 0 [
+    ; Probabilité d'adoption influencée par les voisins adoptants
+    let num-adopting-neighbors count neighbors-list with [adoption-status = 1]
+    let adoption-probability 0.1 * num-adopting-neighbors / (count neighbors-list + 1)
+    
+    ; Si le désir est très élevé, l'adoption est plus probable
+    set adoption-probability adoption-probability + 0.2 * desire
+    
+    if random-float 1 < adoption-probability [
+      set adoption-status 1
+    ]
+  ]
+end
+
+; ============================================================
+; 6. REDISTRIBUTION DE LA ZAKAT
+; ============================================================
+
+to redistribute-zakat
+  ; 80% de la Zakat est redistribuée aux plus pauvres
+  let zakat-to-redistribute 0.8 * total-zakat-collected
+  set zakat-pool zakat-pool + zakat-to-redistribute
+  set total-zakat-collected 0
+  
+  if zakat-pool > 0 [
+    ; Identifier les 20% les plus pauvres
+    let sorted-turtles sort-on [wealth] turtles
+    let num-recipients round (0.2 * count turtles)
+    let recipients sublist sorted-turtles 0 (min list num-recipients count sorted-turtles)
+    
+    if not empty? recipients [
+      let zakat-per-recipient zakat-pool / count recipients
+      ask recipients [
+        set wealth wealth + zakat-per-recipient
+        set wealth-history lput wealth wealth-history
+      ]
+    ]
+    set zakat-pool 0
+  ]
+end
+
+; ============================================================
+; 7. MISE À JOUR DES VARIABLES MACROÉCONOMIQUES
+; ============================================================
+
+to update-macro-variables
+  ; Calcul de la richesse totale
+  set total-wealth sum [wealth] of turtles
+  
+  ; Allocation moyenne (alpha)
+  set avg-alpha mean [alpha] of turtles
+  
+  ; Désir moyen
+  set avg-desire mean [desire] of turtles
+  
+  ; Coefficient de Gini
+  set gini-coefficient compute-gini
+  
+  ; Niveau de crise (basé sur la dispersion du désir)
+  let desire-std standard-deviation [desire] of turtles
+  set crisis-level min 1 (desire-std * 2)
+  
+  ; Inflation (fonction de la croissance monétaire et de la crise)
+  let money-supply-growth 0.03
+  let economic-growth 0.02
+  set inflation-rate max 0 (money-supply-growth - economic-growth + crisis-level * 0.5)
+  
+  ; Vélocité de la monnaie (s'envole en cas de crise)
+  if crisis-level > 0 [
+    set velocity-money 1.5 * exp (2 * crisis-level)
+  ] else [
+    set velocity-money 1.5
+  ]
+end
+
+; ============================================================
+; 8. FONCTIONS UTILITAIRES
+; ============================================================
+
+to-report compute-gini
+  ; Calcul du coefficient de Gini
+  let wealth-list sort [wealth] of turtles
+  let n length wealth-list
+  let cumulative-sum 0
+  let total 0
+  let sum 0
+  
+  set total sum wealth-list
+  if total = 0 [report 0]
+  
+  (foreach wealth-list [
+    set sum sum + cumulative-sum
+    set cumulative-sum cumulative-sum + ?
+  ])
+  
+  let gini (2 * sum) / (n * total) - (n + 1) / n
+  report gini
+end
+
+to-report standard-deviation [values]
+  ; Calcul de l'écart-type d'une liste
+  let mean-val mean values
+  let sum-squares sum (map [x -> (x - mean-val) ^ 2] values)
+  report sqrt (sum-squares / (length values - 1))
+end
+
+; ============================================================
+; 9. ENREGISTREMENT DES DONNÉES
+; ============================================================
+
+to record-data
+  set wealth-history lput total-wealth wealth-history
+  set alpha-history lput avg-alpha alpha-history
+  set desire-history lput avg-desire desire-history
+  set gini-history lput gini-coefficient gini-history
+  set crisis-history lput crisis-level crisis-history
+  set inflation-history lput inflation-rate inflation-history
+  set velocity-history lput velocity-money velocity-history
+end
+
+; ============================================================
+; 10. VISUALISATION ET GRAPHIQUES
+; ============================================================
+
+to setup-plots
+  ; Configuration des graphiques (interface NetLogo)
+  clear-plot
+  set-current-plot "Richesse Totale"
+  set-plot-x-range 0 200
+  set-plot-y-range 0 50000
+  
+  set-current-plot "Allocation (Alpha)"
+  set-plot-x-range 0 200
+  set-plot-y-range 0 1
+  
+  set-current-plot "Désir Mimétique"
+  set-plot-x-range 0 200
+  set-plot-y-range 0 1
+  
+  set-current-plot "Crise et Inflation"
+  set-plot-x-range 0 200
+  set-plot-y-range 0 2
+  
+  set-current-plot "Coefficient de Gini"
+  set-plot-x-range 0 200
+  set-plot-y-range 0 1
+end
+
+; Mise à jour des graphiques à chaque tick
+to update-plots
+  set-current-plot "Richesse Totale"
+  plot total-wealth
+  
+  set-current-plot "Allocation (Alpha)"
+  plot avg-alpha
+  
+  set-current-plot "Désir Mimétique"
+  plot avg-desire
+  
+  set-current-plot "Crise et Inflation"
+  plot inflation-rate
+  plot crisis-level
+  plot velocity-money / 10  ; Normalisation pour la visualisation
+  
+  set-current-plot "Coefficient de Gini"
+  plot gini-coefficient
+end
+
+; ============================================================
+; 11. INTERFACE UTILISATEUR (BOUTONS)
+; ============================================================
+
+; Bouton "Setup" : appelle setup
+; Bouton "Go" : appelle go (indéfini)
+; Bouton "Go Once" : appelle go (une seule étape)
+
+; ============================================================
+; 12. VISUALISATION DES AGENTS (COULEURS)
+; ============================================================
+
+to update-visualization
+  ; Couleur en fonction du statut d'adoption
+  ask turtles [
+    if adoption-status = 1 [
+      set color green
+      set size 3
+    ] else [
+      set color blue
+      set size 2
+    ]
+    
+    ; Taille proportionnelle à la richesse (logarithme pour éviter l'effet d'échelle)
+    let size-factor 1 + log (wealth + 1) / 10
+    set size size-factor
+  ]
+end
+
+; ============================================================
+; FIN DU CODE NETLOGO
+; ============================================================
+
+Le processus de décision d'allocation monétaire (entre nuqud et fulus) est modélisé par une fonction softmax :
+let cognitive-temperature 0.5 + random-float 0.5
+let prob-fulus exp (utility-fulus / cognitive-temperature) / (exp (utility-fulus / cognitive-temperature) + exp (utility-nuqud / cognitive-temperature))
+Utilité : L'inverse du coût de détention de chaque type de monnaie.
+Température cognitive : Un paramètre stochastique qui introduit de l'incertitude (bruit neuronal). Une température élevée rend la décision plus aléatoire, simulant l'irrationalité cognitive face à l'incertitude monétaire.
+Modèle neurocognitif : Ce softmax est couramment utilisé en neurosciences pour modéliser les choix probabilistes (ex : modèles de décision de type "drift-diffusion"). Il est donc compatible avec une collaboration avec Boris Gutkin.
+Le réseau social est un graphe de petit monde (Watts-Strogatz) où chaque agent est connecté à 4 voisins et à des liens aléatoires supplémentaires.
+to spread-adoption
+  let num-adopting-neighbors count neighbors-list with [adoption-status = 1]
+  let adoption-probability 0.1 * num-adopting-neighbors / (count neighbors-list + 1)
+  if random-float 1 < adoption-probability [set adoption-status 1]
+end
+Contagion : L'adoption du crypto-fulus se propage comme une épidémie (modèle SIR simplifié). Plus un agent a de voisins adoptants, plus il est susceptible d'adopter à son tour.
+Désir comme vecteur : Le désir mimétique est contagieux. Si un voisin a un désir d'argent élevé, il influence son entourage.
+Nisab : Un seuil de richesse (paramètre global fixé à 100 unités). La Zakat n'est prélevée que sur la richesse excédentaire.
+Stabilisateur automatique : La Zakat est redistribuée aux 20% les plus pauvres, créant un mécanisme de lutte contre les inégalités.
+Variable
+Signification
+Liens avec la thèse
+crisis-level
+Niveau de crise axiologique
+Mesure la dispersion du désir mimétique (Orléan)
+velocity-money
+Vélocité de la monnaie
+S'envole exponentiellement en cas de crise (fuite vers les actifs réels)
+gini-coefficient
+Inégalité de richesse
+Mesure l'effet redistributif de la Zakat
+avg-alpha
+Proportion moyenne en fulus
+Indicateur de l'adoption du crypto-fulus
+
+
+Aspect
+Python
+NetLogo
+Objectif
+Analyse quantitative, modélisation mathématique
+Visualisation et simulation comportementale
+Audience
+Chercheurs en économie quantitative, HSE
+Économistes comportementaux, sociologues
+Réseau social
+Implicite (moyenne globale)
+Explicite (graphe de petit monde)
+Bruit neuronal
+Implémenté via np.random
+Implémenté via softmax avec température cognitive
+Visualisation
+Graphiques statiques (Matplotlib)
+Animations dynamiques (interface NetLogo)
+
+
+Calibration neurocognitive : Utiliser des données comportementales (IRM) pour ajuster la température cognitive et les paramètres de désir.
+Réseau plus complexe : Ajouter des communautés (clusters) avec des degrés de connectivité variables.
+Feedback macro-micro : L'inflation et la crise affectent les décisions individuelles, qui en retour modifient les agrégats.
+Règles de gouvernance : Simuler l'élection sans candidat de l'Émir et la gestion collective du waqf.
+
+Souhaitez-vous que je développe l'une de ces extensions, ou que je fournisse une version du code en R ou MATLAB pour une analyse plus poussée ?
