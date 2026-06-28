@@ -1,0 +1,61 @@
+# Configuration du modèle Yusuf-Grondona
+
+model:
+  name: "Yusuf-Grondona Bimetallic Economy"
+  version: "1.0"
+  
+parameters:
+  # Paramètres thermodynamiques (van der Waals)
+  a: 1.0          # Coefficient d'attraction économique
+  b: 0.1          # Volume de survie minimum
+  R: 1.0          # Constante économique
+  
+  # Points critiques (calculés automatiquement)
+  # Vc = 3*b = 0.3
+  # Tc = 8*a/(27*R*b) = 8/(2.7) ≈ 2.963
+  
+  # Dynamique de la production
+  gamma: 0.5      # Coefficient de croissance
+  delta: 0.3      # Coefficient d'amortissement
+  
+  # Régulation de Yusuf (température)
+  mu: 0.4         # Sensibilité de l'offre à la production
+  lambda_yusuf: 0.8  # Force de rappel (doit > mu pour stabilité)
+  sigma: 0.1      # Amplitude du bruit 1/f
+  
+  # Système de Grondona (stock de monnaie)
+  kappa: 0.3      # Coefficient d'accumulation du stock
+  nu: 0.05        # Taux de dépréciation/désuétude
+  theta: 0.6      # Couplage stock ⇄ devise
+  rho: 0.4        # Couplage température ⇄ devise
+  
+  # Dynamique de la devise (Yusuf)
+  alpha: 0.7      # Force de régulation de la devise
+  
+  # Chocs
+  shock_amplitude: 0.2
+  shock_frequency: 0.02
+
+simulation:
+  dt: 0.01
+  t_max: 100.0
+  transient: 10.0  # Temps de stabilisation initial
+  seed: 42
+
+initial_conditions:
+  V0: 0.35        # Volume initial (proche de Vc)
+  T0: 2.8         # Température initiale (proche de Tc)
+  S0: 0.0         # Stock initial
+  C0: 1.0         # Devise initiale
+
+economics:
+  debt_threshold: 1.5   # Seuil de dette critique
+  gini_initial: 0.35    # Coefficient de Gini initial
+  productivity_growth: 0.02  # Croissance de productivité
+
+visualization:
+  style: "ggplot"
+  dpi: 150
+  save_figures: true
+  interactive: true
+"""
