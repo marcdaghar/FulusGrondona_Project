@@ -1,0 +1,1 @@
+Absolument. Voici le code Python complet qui implémente les modèles mathématiques décrits précédemment, structuré en modules distincts pour chaque théorie.

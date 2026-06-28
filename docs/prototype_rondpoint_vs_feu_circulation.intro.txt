@@ -1,0 +1,1 @@
+Je vais vous fournir le code complet du prototype Python de simulation monétaire comparant le système bimétallique (rond-point) et le système de dette centralisée (feu de circulation). Ce code est basé sur les concepts développés dans votre thèse.

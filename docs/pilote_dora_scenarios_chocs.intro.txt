@@ -1,0 +1,6 @@
+Absolument. Voici le code Python complet pour simuler le pilote Dora avec les trois scénarios, les chocs exogènes, et les visualisations.
+Je structure le code en quatre parties :
+Configuration et paramètres
+Modèle multi-agents
+Scénarios et chocs
+Visualisation

@@ -1,0 +1,1 @@
+Absolument. Voici le code qui formalise les concepts mathématiques que nous avons développés. Je fournis une approche en trois niveaux : modélisation mathématique (Python), simulation multi-agents (NetLogo), et visualisation.

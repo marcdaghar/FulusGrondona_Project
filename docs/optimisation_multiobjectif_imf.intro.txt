@@ -1,0 +1,2 @@
+Absolument. Voici un script Python complet et autonome qui implémente l'ensemble des formulations mathématiques de votre modèle, de l'optimisation multi-objectif à la comparaison avec le système IMF, en passant par la dynamique des prix avec retards.
+Ce code est conçu pour être pédagogique, modulaire et directement exécutable.

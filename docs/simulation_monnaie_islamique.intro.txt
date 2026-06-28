@@ -1,0 +1,1 @@
+Absolument. Voici le code (Python) correspondant aux formulations mathématiques que je vous ai fournies. Ce code est conçu pour être exécutable et pour illustrer les concepts de votre thèse de manière dynamique. Il peut être utilisé pour simuler l'impact de différentes variables sur le système monétaire islamique.

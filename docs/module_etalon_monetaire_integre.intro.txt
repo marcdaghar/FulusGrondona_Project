@@ -1,0 +1,1 @@
+Je vais vous fournir le code correspondant aux formulations mathématiques présentées, organisé en modules fonctionnels.

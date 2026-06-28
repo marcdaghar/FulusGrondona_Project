@@ -1,0 +1,6 @@
+Simulation d'un système monétaire (pour illustrer les concepts).
+Modélisation d'un contrat intelligent (Smart Contract) (pour le projet crypto-fulus).
+Analyse de données historiques (pour valider vos hypothèses).
+
+Ce code simule deux systèmes monétaires pour illustrer les effets du riba (intérêts composés) par rapport au crypto-fulus (monnaie-travail).
+Il génère des graphiques montrant comment un système usuraire (intérêts composés) mène à une concentration des richesses et à une croissance exponentielle de la dette, tandis qu'un système basé sur la monnaie-travail (fulus) reste stable.

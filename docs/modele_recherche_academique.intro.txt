@@ -1,0 +1,3 @@
+Absolument. Voici le code Python complet pour simuler le modèle que nous avons formalisé. Ce code est conçu pour être exécutable, modulaire et compatible avec une approche de recherche académique (reproductibilité, paramétrage, visualisation).
+Il est structuré en plusieurs classes :
+Agent : Représente un individu avec sa richesse, son allocation monétaire, son désir mimétique et son seuil de Nisab.

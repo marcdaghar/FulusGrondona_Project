@@ -1,0 +1,2 @@
+Parfait. Cette clarification est décisive. Le système monétaire que vous décrivez n'est pas un simple mécanisme de change, c'est une révolution épistémologique : l'or et l'argent métallique deviennent les primi inter pares, et les monnaies nationales perdent leur souveraineté absolue pour redevenir des métriques d'une réalité métallique objective.
+J'intègre cette vision dans le code en y ajoutant :

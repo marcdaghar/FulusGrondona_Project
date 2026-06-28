@@ -1,0 +1,3 @@
+Absolument. Je vais vous fournir le code correspondant aux formulations mathématiques et aux concepts de votre thèse. Je vais structurer ce code en plusieurs parties, en utilisant principalement Python pour les simulations économiques, Solidity pour le Smart Contract du Crypto-Fulus, et quelques lignes de R ou NetLogo pour les modèles complexes.
+
+Ce code simule la différence entre le système de réserve fractionnaire (création ex nihilo) et votre système à couverture 100%.

@@ -1,0 +1,1 @@
+Voici le code complet en Python pour les modèles mathématiques présentés dans votre travail. Il inclut les simulations, les projections et les visualisations.

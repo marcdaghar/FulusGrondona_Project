@@ -1,0 +1,2 @@
+D'accord. Passons de la théorie à la pratique. J'ai analysé les éléments de votre proposition théorique pour en faire un code "production". Voici le résultat, structuré en quatre contrats Solidity pour Ethereum.
+Ce contrat est le cœur de votre système. Il gère le Dinar d'or (4.25g de métal fin) et le Dirham d'argent (2.975g de métal fin), établissant le rapport de change fixe de 10:1, car il n'y a pas d'alternative neutre sans cet ancrage.

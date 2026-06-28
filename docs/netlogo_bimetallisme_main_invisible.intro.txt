@@ -1,0 +1,1 @@
+Voici un modèle NetLogo simplifié qui simule la coordination du marché dans un système bimétallique.

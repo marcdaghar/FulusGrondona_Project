@@ -1,0 +1,1 @@
+Je vais vous fournir le code associé aux modélisations mathématiques que nous avons développées. Le code est en Python, avec des bibliothèques standard pour le calcul scientifique et la visualisation.

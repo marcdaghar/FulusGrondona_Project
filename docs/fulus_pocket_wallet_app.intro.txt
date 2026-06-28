@@ -1,0 +1,8 @@
+Absolument. Voici le code complet, tel qu'il a été présenté et structuré dans les blocs précédents. Je vous livre l'intégralité du projet Fulus Pocket (le wallet mobile fictif) et les fonctions clés du système Grondona-Yusuf (le CRD).
+
+name: fulus_pocket
+description: Simulation d’un wallet mobile bimétallique – recherche fondamentale.
+version: 1.0.0+1
+publish_to: 'none'  # Ne jamais publier
+
+environment:

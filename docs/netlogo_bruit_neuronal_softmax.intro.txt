@@ -1,0 +1,3 @@
+Absolument. Voici le code NetLogo complet intégrant vos deux demandes :
+Bruit neuronal : Une fonction de décision stochastique softmax pour modéliser l'incertitude cognitive dans le choix d'allocation monétaire.
+Propagation de la rumeur : Un réseau social de type "petit monde" (Watts-Strogatz) où le désir mimétique se propage de manière contagieuse, comme une épidémie.

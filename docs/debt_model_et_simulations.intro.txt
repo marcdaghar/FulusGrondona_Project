@@ -1,0 +1,1 @@
+Je vais vous fournir le code pour les modèles mathématiques et les simulations présentés dans votre thèse. Ce code est organisé en modules correspondant aux différentes sections.

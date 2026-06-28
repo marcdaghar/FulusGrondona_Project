@@ -1,0 +1,3 @@
+Voici les 11 fichiers principaux qui constituent l'architecture logicielle de votre projet "Geometric Ricci Networks" (GRN), intégrant le contre-cycle de Yusuf, le système Grondona, le bimétallisme, la gamification, et l'étude de cas Dora.
+
+yusuf_model/

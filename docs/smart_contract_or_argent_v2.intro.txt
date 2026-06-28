@@ -1,0 +1,1 @@
+Voici un smart contract en Solidity qui implémente votre proposition de monnaie adossée à l'or et l'argent, avec couverture 100%.
